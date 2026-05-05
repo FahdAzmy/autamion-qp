@@ -14,6 +14,8 @@ import type {
   SerializedOrderLog,
 } from "@/types/order";
 
+const DEFAULT_EMPTY_CITY = "حدد من العنوان";
+
 export function serializeOrder(order: OrderDocument): SerializedOrder {
   return {
     ...order,
@@ -38,7 +40,6 @@ export function validateOrderDraft(draft: OrderDraft) {
 
   if (!draft.customer.fullName?.trim()) errors.push("Customer full name is required.");
   if (!draft.customer.phone?.trim()) errors.push("Customer phone is required.");
-  if (!draft.customer.city?.trim()) errors.push("Customer city is required.");
   if (!draft.customer.address?.trim()) errors.push("Customer address is required.");
   if (!String(draft.shipment.totalAmount ?? "").trim()) errors.push("Total amount is required.");
   if (!draft.shipment.shipmentContents?.trim()) {
@@ -68,6 +69,7 @@ export async function logOrder(orderId: ObjectId, type: OrderLogDocument["type"]
 export async function createLocalOrder(draft: OrderDraft) {
   const now = new Date();
   const referenceID = makeReferenceId(draft);
+  const city = draft.customer.city.trim() || DEFAULT_EMPTY_CITY;
   const document: OrderDocument = {
     source: draft.source,
     easyOrdersId: draft.easyOrdersId,
@@ -79,7 +81,7 @@ export async function createLocalOrder(draft: OrderDraft) {
       fullName: draft.customer.fullName.trim(),
       phone: draft.customer.phone.trim(),
       altPhone: draft.customer.altPhone?.trim(),
-      city: draft.customer.city.trim(),
+      city,
       qpCityId: draft.customer.qpCityId,
       address: draft.customer.address.trim(),
     },
@@ -105,13 +107,15 @@ export async function createLocalOrder(draft: OrderDraft) {
 }
 
 export function orderToQpPayload(order: OrderDocument): QpCreateOrderPayload {
+  const city = resolveQpCityValue(order.customer.city, order.customer.qpCityId) ?? order.customer.city;
+
   return {
     order_date: toQpDateTime(order.shipment.orderDate),
     shipment_contents: order.shipment.shipmentContents,
     weight: order.shipment.weight,
     full_name: order.customer.fullName,
     phone: order.customer.phone,
-    city: resolveQpCityValue(order.customer.city, order.customer.qpCityId),
+    city,
     notes: order.shipment.notes ?? "",
     total_amount: order.shipment.totalAmount,
     address: order.customer.address,
