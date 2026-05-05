@@ -1,0 +1,24 @@
+
+> qp-admin-app@0.1.0 dev
+> next dev --port 3000
+
+▲ Next.js 16.2.4 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.100.6:3000
+- Environments: .env
+✓ Ready in 1978ms
+
+○ Compiling /orders ...
+ GET /orders 200 in 8.9s (next.js: 5.2s, application-code: 3.7s)
+ GET / 307 in 1198ms (next.js: 790ms, application-code: 408ms)
+ GET / 307 in 261ms (next.js: 19ms, application-code: 243ms)
+ GET /orders 200 in 340ms (next.js: 20ms, application-code: 321ms)
+ GET /orders 200 in 262ms (next.js: 10ms, application-code: 252ms)
+ GET /orders 200 in 641ms (next.js: 125ms, application-code: 516ms)
+ GET /orders/upload 200 in 1816ms (next.js: 1735ms, application-code: 80ms)
+ POST /api/upload 200 in 46s (next.js: 1607ms, application-code: 45s)
+ GET /orders 200 in 593ms (next.js: 47ms, application-code: 546ms)
+ GET /orders/69fa1b8ee370e9f50ae71b4d 200 in 4.3s (next.js: 4.1s, application-code: 251ms)
+ POST /api/orders/69fa1b8ee370e9f50ae71b4d/sync 500 in 2.6s (next.js: 2.4s, application-code: 106ms)
+  Reload env: .env
+ GET /orders 200 in 2.5s (next.js: 317ms, application-code: 2.2s)
