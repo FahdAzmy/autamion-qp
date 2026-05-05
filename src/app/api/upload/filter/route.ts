@@ -1,5 +1,8 @@
 import { excelImportsCollection } from "@/server/db/collections";
-import { parseExcelOrders, parsedExcelOrderMatchesProduct } from "@/server/services/excelParser";
+import {
+  filterParsedExcelOrdersByProduct,
+  parseExcelOrders,
+} from "@/server/services/excelParser";
 import {
   createLocalOrder,
   normalizeError,
@@ -14,7 +17,11 @@ export async function POST(request: Request) {
   try {
     const formData = await request.formData();
     const file = formData.get("file");
-    const exceptProductName = String(formData.get("exceptProductName") ?? "").trim();
+    const productName = String(formData.get("productName") ?? "").trim();
+
+    if (!productName) {
+      return Response.json({ error: "Product name is required." }, { status: 400 });
+    }
 
     if (!(file instanceof File)) {
       return Response.json({ error: "Excel file is required." }, { status: 400 });
@@ -25,13 +32,11 @@ export async function POST(request: Request) {
     }
 
     const parsedRows = parseExcelOrders(await file.arrayBuffer());
-    const rowsToImport = exceptProductName
-      ? parsedRows.filter((row) => !parsedExcelOrderMatchesProduct(row, exceptProductName))
-      : parsedRows;
+    const matchedRows = filterParsedExcelOrdersByProduct(parsedRows, productName);
     const createdOrders = [];
     const errors = [];
 
-    for (const row of rowsToImport) {
+    for (const row of matchedRows) {
       if (!row.draft) {
         errors.push({ rowNumber: row.rowNumber, message: row.error ?? "Could not parse row." });
         continue;
@@ -40,7 +45,11 @@ export async function POST(request: Request) {
       const validationErrors = validateOrderDraft(row.draft);
 
       if (validationErrors.length > 0) {
-        errors.push({ rowNumber: row.rowNumber, message: validationErrors.join(" "), rawRow: row.draft.rawSourcePayload });
+        errors.push({
+          rowNumber: row.rowNumber,
+          message: validationErrors.join(" "),
+          rawRow: row.draft.rawSourcePayload,
+        });
         continue;
       }
 
@@ -50,17 +59,22 @@ export async function POST(request: Request) {
       if (updatedOrder) {
         createdOrders.push(serializeOrder(updatedOrder));
         if (updatedOrder.lastError) {
-          errors.push({ rowNumber: row.rowNumber, message: "QP create failed.", error: updatedOrder.lastError });
+          errors.push({
+            rowNumber: row.rowNumber,
+            message: "QP create failed.",
+            error: updatedOrder.lastError,
+          });
         }
       }
     }
 
     await (await excelImportsCollection()).insertOne({
       fileName: file.name,
-      importType: exceptProductName ? "except_product_filter" : "full",
-      exceptProductName: exceptProductName || undefined,
+      importType: "product_filter",
+      productName,
       totalRows: parsedRows.length,
-      skippedRows: parsedRows.length - rowsToImport.length,
+      matchedRows: matchedRows.length,
+      skippedRows: parsedRows.length - matchedRows.length,
       successCount: createdOrders.length,
       failedCount: errors.length,
       createdOrderIds: createdOrders.map((order) => order.id),
@@ -69,9 +83,10 @@ export async function POST(request: Request) {
     });
 
     return Response.json({
-      exceptProductName: exceptProductName || undefined,
+      productName,
       totalRows: parsedRows.length,
-      skippedRows: exceptProductName ? parsedRows.length - rowsToImport.length : undefined,
+      matchedRows: matchedRows.length,
+      skippedRows: parsedRows.length - matchedRows.length,
       successCount: createdOrders.length,
       failedCount: errors.length,
       createdOrders,

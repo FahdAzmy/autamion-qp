@@ -12,6 +12,33 @@ export type ParsedExcelOrder = {
   error?: string;
 };
 
+function normalizeProductSearchText(text: string) {
+  return text
+    .normalize("NFKC")
+    .toLocaleLowerCase()
+    .replace(/[\u064B-\u065F\u0670\u0640]/g, "")
+    .replace(/[\u0622\u0623\u0625\u0671]/g, "\u0627")
+    .replace(/[\u0649]/g, "\u064A")
+    .replace(/[^\p{L}\p{N}]+/gu, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+export function parsedExcelOrderMatchesProduct(row: ParsedExcelOrder, productName: string) {
+  const query = normalizeProductSearchText(productName);
+
+  if (!query) return false;
+
+  return (
+    row.draft?.items?.some((item) => normalizeProductSearchText(item.name).includes(query)) ??
+    false
+  );
+}
+
+export function filterParsedExcelOrdersByProduct(rows: ParsedExcelOrder[], productName: string) {
+  return rows.filter((row) => parsedExcelOrderMatchesProduct(row, productName));
+}
+
 function value(row: ExcelRow, key: string) {
   const entry = row[key];
   return entry === null || entry === undefined ? "" : String(entry).trim();
