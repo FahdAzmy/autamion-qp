@@ -107,15 +107,13 @@ export async function createLocalOrder(draft: OrderDraft) {
 }
 
 export function orderToQpPayload(order: OrderDocument): QpCreateOrderPayload {
-  const city = resolveQpCityValue(order.customer.city, order.customer.qpCityId) ?? order.customer.city;
-
   return {
     order_date: toQpDateTime(order.shipment.orderDate),
     shipment_contents: order.shipment.shipmentContents,
     weight: order.shipment.weight,
     full_name: order.customer.fullName,
     phone: order.customer.phone,
-    city,
+    city: resolveQpCityValue(order.customer.city, order.customer.qpCityId),
     notes: order.shipment.notes ?? "",
     total_amount: order.shipment.totalAmount,
     address: order.customer.address,

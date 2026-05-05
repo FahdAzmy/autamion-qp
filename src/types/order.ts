@@ -95,7 +95,7 @@ export type QpCreateOrderPayload = {
   weight: string;
   full_name: string;
   phone: string;
-  city?: number | string;
+  city?: number;
   notes: string;
   total_amount: string | number;
   address: string;
