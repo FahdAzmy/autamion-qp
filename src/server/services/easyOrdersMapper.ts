@@ -71,9 +71,6 @@ export function isEasyOrdersStatusUpdate(payload: unknown): payload is {
 
 export function easyOrdersToDraft(payload: EasyOrdersPayload): OrderDraft {
   const items = mapItems(payload.cart_items);
-  const notes = [`EasyOrders status: ${payload.status ?? "unknown"}`, `Payment: ${payload.payment_method ?? "unknown"}`]
-    .filter(Boolean)
-    .join("\n");
 
   return {
     source: "easyorders",
@@ -91,7 +88,7 @@ export function easyOrdersToDraft(payload: EasyOrdersPayload): OrderDraft {
       shipmentContents: buildShipmentContents(items) || "EasyOrders shipment",
       weight: optionalEnv("DEFAULT_SHIPMENT_WEIGHT", "0.00"),
       totalAmount: payload.total_cost ?? "",
-      notes,
+      notes: "شحن 70",
     },
     items,
     payment: {
